@@ -6,7 +6,7 @@ Currently the API doesn't really support this sort of thing, so this is basicall
 
 It runs through your current open editors and closes any that are unmodified in git. This obviously depends on having git installed.
 
-It will also fail if it comes across an opened image. For some reason, the API doesn't provide any way to  detect when this has happened. Any suggestions gratefully received!
+Doesn't cope very well if only one file is currently open. It will also fail if it comes across an opened image. For some reason, the API doesn't provide any way to detect when this has happened. Any suggestions gratefully received!
 
 ## Operation
 

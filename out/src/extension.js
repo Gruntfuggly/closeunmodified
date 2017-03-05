@@ -10,9 +10,18 @@ function activate( context )
 {
     var disposable = vscode.commands.registerCommand( 'extension.closeUnmodifiedEditors', function()
     {
+        function abort()
+        {
+            if( tracker )
+            {
+                tracker.dispose();
+            }
+        }
+
+        var aborter = setTimeout( abort, 3000 );
+
         if( vscode.window.activeTextEditor === undefined )
         {
-            vscode.window.showInformationMessage( "[closeUnmodified] Unclosable window found. Please close this window manually..." );
             return false;
         }
 
@@ -43,6 +52,7 @@ function activate( context )
                 }
                 else
                 {
+                    clearTimeout( aborter );
                     tracker.dispose();
                 }
             }

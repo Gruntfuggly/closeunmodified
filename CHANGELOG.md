@@ -1,3 +1,6 @@
+# V0.0.3 - 2017-05-03
+- minor improvements
+
 # V0.0.2 - 2017-05-03
 - Fixed link to repo
 
