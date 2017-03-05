@@ -3,9 +3,9 @@
     "displayName": "Close Unmodified",
     "icon": "icon.png",
     "description": "Close files which aren't modified in git",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "publisher": "Gruntfuggly",
-    "repository": "https: //github.com/Gruntfuggly/closeunmodified",
+    "repository": "https://github.com/Gruntfuggly/closeunmodified",
     "engines": {
         "vscode": "^1.5.0"
     },
