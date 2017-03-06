@@ -10,9 +10,16 @@ function activate( context )
 {
     var disposable = vscode.commands.registerCommand( 'extension.closeUnmodifiedEditors', function()
     {
+        function abort()
+        {
+            if( tracker )
+            {
+                tracker.dispose();
+            }
+        }
+
         if( vscode.window.activeTextEditor === undefined )
         {
-            vscode.window.showInformationMessage( "[closeUnmodified] Unclosable window found. Please close this window manually..." );
             return false;
         }
 
@@ -39,14 +46,21 @@ function activate( context )
 
                 if( editor.document.uri.path != activePath )
                 {
+                    clearTimeout( aborter );
+                    var aborter = setTimeout( abort, 1000 );
+
                     vscode.commands.executeCommand( "workbench.action.nextEditor" );
                 }
                 else
                 {
+                    clearTimeout( aborter );
                     tracker.dispose();
                 }
             }
         } );
+
+        clearTimeout( aborter );
+        var aborter = setTimeout( abort, 1000 );
 
         vscode.commands.executeCommand( "workbench.action.nextEditor" );
     } );
