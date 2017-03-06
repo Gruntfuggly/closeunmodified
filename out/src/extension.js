@@ -18,8 +18,6 @@ function activate( context )
             }
         }
 
-        var aborter = setTimeout( abort, 3000 );
-
         if( vscode.window.activeTextEditor === undefined )
         {
             return false;
@@ -48,6 +46,8 @@ function activate( context )
 
                 if( editor.document.uri.path != activePath )
                 {
+                    clearTimeout( aborter );
+                    aborter = setTimeout( abort, 3000 );
                     vscode.commands.executeCommand( "workbench.action.nextEditor" );
                 }
                 else
@@ -58,6 +58,7 @@ function activate( context )
             }
         } );
 
+        var aborter = setTimeout( abort, 3000 );
         vscode.commands.executeCommand( "workbench.action.nextEditor" );
     } );
 
