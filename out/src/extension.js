@@ -18,6 +18,8 @@ function activate( context )
             }
         }
 
+        var aborter = setTimeout( abort, 3000 );
+
         if( vscode.window.activeTextEditor === undefined )
         {
             return false;
@@ -33,11 +35,11 @@ function activate( context )
             {
                 if( editor.document.isDirty === false )
                 {
-                    var filepath = editor.document.uri.path;
+                    var filepath = vscode.Uri.parse( editor.document.uri.path ).fsPath;
                     var folder = path.dirname( filepath );
                     var name = path.basename( filepath );
 
-                    var status = exec( 'cd ' + folder + '; git status -z ' + name );
+                    var status = exec( 'git status -z ' + name, { cwd:folder } );
                     if( status === undefined || ( status + "" ).trim() === "" )
                     {
                         vscode.commands.executeCommand( "workbench.action.closeActiveEditor" );
@@ -46,9 +48,6 @@ function activate( context )
 
                 if( editor.document.uri.path != activePath )
                 {
-                    clearTimeout( aborter );
-                    var aborter = setTimeout( abort, 1000 );
-
                     vscode.commands.executeCommand( "workbench.action.nextEditor" );
                 }
                 else
@@ -58,9 +57,6 @@ function activate( context )
                 }
             }
         } );
-
-        clearTimeout( aborter );
-        var aborter = setTimeout( abort, 1000 );
 
         vscode.commands.executeCommand( "workbench.action.nextEditor" );
     } );
@@ -74,3 +70,4 @@ function deactivate()
 {
 }
 exports.deactivate = deactivate;
+
