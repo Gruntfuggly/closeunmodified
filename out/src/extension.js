@@ -2,7 +2,8 @@
 // Import the module and reference it with the alias vscode in your code below
 var vscode = require( 'vscode' ),
     path = require( 'path' ),
-    exec = require( 'child_process' ).execSync;
+    exec = require( 'child_process' ).execSync,
+    git = require( 'simple-git' );
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -27,23 +28,8 @@ function activate( context )
 
         var tracker = vscode.window.onDidChangeActiveTextEditor( function()
         {
-            var editor = vscode.window.activeTextEditor;
-
-            if( editor )
+            function next( editor )
             {
-                if( editor.document.isDirty === false )
-                {
-                    var filepath = editor.document.uri.path;
-                    var folder = path.dirname( filepath );
-                    var name = path.basename( filepath );
-
-                    var status = exec( 'cd ' + folder + '; git status -z ' + name );
-                    if( status === undefined || ( status + "" ).trim() === "" )
-                    {
-                        vscode.commands.executeCommand( "workbench.action.closeActiveEditor" );
-                    }
-                }
-
                 if( editor.document.uri.path != activePath )
                 {
                     clearTimeout( aborter );
@@ -54,6 +40,34 @@ function activate( context )
                 {
                     clearTimeout( aborter );
                     tracker.dispose();
+                }
+            }
+
+            var editor = vscode.window.activeTextEditor;
+
+            if( editor )
+            {
+                if( editor.document.isDirty === false )
+                {
+                    var filepath = vscode.Uri.parse( editor.document.uri.path ).fsPath;
+                    var folder = path.dirname( filepath );
+                    var name = path.basename( filepath );
+
+                    git( folder ).raw(
+                        [ 'status', '-z', name ],
+                        function( err, status )
+                        {
+                            if( status === null )
+                            {
+                                vscode.commands.executeCommand( "workbench.action.closeActiveEditor" );
+                            }
+                            next( editor );
+                        }
+                    );
+                }
+                else
+                {
+                    next( editor );
                 }
             }
         } );
