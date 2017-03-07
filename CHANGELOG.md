@@ -1,3 +1,6 @@
+# V0.0.4 - 2017-05-03
+- Fixed Issue #2 - Only closes some editors
+
 # V0.0.3 - 2017-05-03
 - minor improvements
 
