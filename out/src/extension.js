@@ -2,8 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 var vscode = require( 'vscode' ),
     path = require( 'path' ),
-    exec = require( 'child_process' ).execSync,
-    git = require( 'simple-git' );
+    exec = require( 'child_process' ).execSync;
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -53,17 +52,12 @@ function activate( context )
                     var folder = path.dirname( filepath );
                     var name = path.basename( filepath );
 
-                    git( folder ).raw(
-                        [ 'status', '-z', name ],
-                        function( err, status )
-                        {
-                            if( status === null )
-                            {
-                                vscode.commands.executeCommand( "workbench.action.closeActiveEditor" );
-                            }
-                            next( editor );
-                        }
-                    );
+                    var status = exec( 'git status -z ' + name, {cwd:folder })
+                    if( status === undefined || (status + "").trim() === "" )
+                    {
+                        vscode.commands.executeCommand( "workbench.action.closeActiveEditor" );
+                    }
+                    next( editor );
                 }
                 else
                 {

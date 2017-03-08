@@ -1,3 +1,6 @@
+# V0.0.6 - 2017-03-08
+- Fixed Issue #1 - Fails on windows
+
 # V0.0.5 - 2017-03-07
 - Fixed Issue #1 - Fails on windows
 
