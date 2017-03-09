@@ -52,10 +52,17 @@ function activate( context )
                     var folder = path.dirname( filepath );
                     var name = path.basename( filepath );
 
-                    var status = exec( 'git status -z ' + name, {cwd:folder })
-                    if( status === undefined || (status + "").trim() === "" )
+                    try
                     {
-                        vscode.commands.executeCommand( "workbench.action.closeActiveEditor" );
+                        var status = exec( 'git status -z ' + name, { cwd: folder } )
+
+                        if( status === undefined || ( status + "" ).trim() === "" )
+                        {
+                            vscode.commands.executeCommand( "workbench.action.closeActiveEditor" );
+                        }
+                    }
+                    catch( e )
+                    {
                     }
                     next( editor );
                 }

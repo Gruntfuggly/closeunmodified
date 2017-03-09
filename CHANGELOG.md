@@ -1,3 +1,6 @@
+# V0.0.7 - 2017-03-09
+- Fixed Issue #3 - Fails if a file is not in a git repository
+
 # V0.0.6 - 2017-03-08
 - Fixed Issue #1 - Fails on windows
 

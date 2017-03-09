@@ -3,7 +3,7 @@
   "displayName": "Close Unmodified",
   "icon": "icon.png",
   "description": "Close files which aren't modified in git",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "publisher": "Gruntfuggly",
   "repository": "https://github.com/Gruntfuggly/closeunmodified",
   "engines": {
@@ -45,6 +45,5 @@
     "@types/mocha": "^2.2.32"
   },
   "dependencies": {
-    "simple-git": "^1.67.0"
   }
 }
