@@ -25,56 +25,95 @@ function activate( context )
 
         var activePath = vscode.window.activeTextEditor.document.uri.path;
 
-        var tracker = vscode.window.onDidChangeActiveTextEditor( function()
+        var toClose = [];
+        var documents = vscode.workspace.textDocuments;
+        documents.map( function( document, i )
         {
-            function next( editor )
+            vscode.window.showTextDocument( document.fileName );
+            console.log( i + vscode.window.activeTextEditor.document.uri.path );
+
+            if( document.isDirty === false )
             {
-                if( editor.document.uri.path != activePath )
-                {
-                    clearTimeout( aborter );
-                    aborter = setTimeout( abort, 3000 );
-                    vscode.commands.executeCommand( "workbench.action.nextEditor" );
-                }
-                else
-                {
-                    clearTimeout( aborter );
-                    tracker.dispose();
-                }
-            }
+                var filepath = vscode.Uri.parse( document.uri.path ).fsPath;
+                var folder = path.dirname( filepath );
+                var name = path.basename( filepath );
 
-            var editor = vscode.window.activeTextEditor;
-
-            if( editor )
-            {
-                if( editor.document.isDirty === false )
+                try
                 {
-                    var filepath = vscode.Uri.parse( editor.document.uri.path ).fsPath;
-                    var folder = path.dirname( filepath );
-                    var name = path.basename( filepath );
+                    var status = exec( 'git status -z ' + name, { cwd: folder } )
 
-                    try
+                    if( status === undefined || ( status + "" ).trim() === "" )
                     {
-                        var status = exec( 'git status -z ' + name, { cwd: folder } )
-
-                        if( status === undefined || ( status + "" ).trim() === "" )
-                        {
-                            vscode.commands.executeCommand( "workbench.action.closeActiveEditor" );
-                        }
+                        toClose.push( document );
                     }
-                    catch( e )
-                    {
-                    }
-                    next( editor );
                 }
-                else
-                {
-                    next( editor );
-                }
+                catch( e )
+                { }
             }
         } );
 
-        var aborter = setTimeout( abort, 3000 );
-        vscode.commands.executeCommand( "workbench.action.nextEditor" );
+        toClose.map( function( document, i )
+        {
+            console.log( i + " will close " + document.fileName );
+            vscode.window.showTextDocument( document.fileName );
+            vscode.commands.executeCommand( "workbench.action.closeActiveEditor" );
+        } );
+
+
+        // var tracker = vscode.window.onDidChangeActiveTextEditor( function()
+        // {
+        //     function next( editor )
+        //     {
+        //         console.log( "ap:" + activePath );
+        //         console.log( "up:" + editor.document.uri.path );
+        //         if( editor.document.uri.path != activePath )
+        //         {
+        //             console.log( "next " );
+        //             clearTimeout( aborter );
+        //             aborter = setTimeout( abort, 3000 );
+        //             vscode.commands.executeCommand( "workbench.action.nextEditor" );
+        //         }
+        //         else
+        //         {
+        //             console.log( "Stopping" );
+        //             clearTimeout( aborter );
+        //             tracker.dispose();
+        //         }
+        //     }
+
+        //     var editor = vscode.window.activeTextEditor;
+
+        //     // if( editor )
+        //     // {
+        //     //     if( editor.document.isDirty === false )
+        //     //     {
+        //     //         var filepath = vscode.Uri.parse( editor.document.uri.path ).fsPath;
+        //     //         var folder = path.dirname( filepath );
+        //     //         var name = path.basename( filepath );
+
+        //     //         try
+        //     //         {
+        //     //             var status = exec( 'git status -z ' + name, { cwd: folder } )
+
+        //     //             if( status === undefined || ( status + "" ).trim() === "" )
+        //     //             {
+        //     //                 vscode.commands.executeCommand( "workbench.action.closeActiveEditor" );
+        //     //             }
+        //     //         }
+        //     //         catch( e )
+        //     //         {
+        //     //         }
+        //     //         next( editor );
+        //     //     }
+        //     //     else
+        //     //     {
+        //     //         next( editor );
+        //     //     }
+        //     // }
+        // } );
+
+        // var aborter = setTimeout( abort, 3000 );
+        // vscode.commands.executeCommand( "workbench.action.nextEditor" );
     } );
 
     context.subscriptions.push( disposable );
