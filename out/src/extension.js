@@ -12,68 +12,94 @@ function activate( context )
     {
         function abort()
         {
-            if( tracker )
+            if( openEditorsTracker )
             {
-                tracker.dispose();
+                openEditorsTracker.dispose();
             }
         }
 
-        if( vscode.window.activeTextEditor === undefined )
-        {
-            return false;
-        }
-
-        var activePath = vscode.window.activeTextEditor.document.uri.path;
-
-        var tracker = vscode.window.onDidChangeActiveTextEditor( function()
+        var openEditorsTracker = vscode.window.onDidChangeActiveTextEditor( function()
         {
             function next( editor )
             {
-                if( editor.document.uri.path != activePath )
+                if( editor === undefined || editor.document.uri.path != activePath )
                 {
                     clearTimeout( aborter );
-                    aborter = setTimeout( abort, 3000 );
+                    aborter = setTimeout( abort, 1000 );
                     vscode.commands.executeCommand( "workbench.action.nextEditor" );
                 }
                 else
                 {
                     clearTimeout( aborter );
-                    tracker.dispose();
+                    openEditorsTracker.dispose();
+
+                    if( openEditors.length > 0 )
+                    {
+                        vscode.workspace.saveAll( true ).then( function()
+                        {
+                            var keepEditors = openEditors.filter( function( editor )
+                            {
+                                var keep = editor.isDirty === true;
+
+                                if( keep === false )
+                                {
+                                    var folder = path.dirname( editor.fileName );
+                                    var name = path.basename( editor.fileName );
+                                    try
+                                    {
+                                        var status = exec( 'git status -z ' + name, { cwd: folder } )
+
+                                        if( status && ( status + "" ).trim() !== "" )
+                                        {
+                                            keep = true;
+                                        }
+                                    }
+                                    catch( e )
+                                    {
+                                    }
+                                }
+                                return keep;
+                            } );
+
+                            vscode.commands.executeCommand( "workbench.action.closeAllEditors" ).then( function()
+                            {
+                                keepEditors.map( function( editor )
+                                {
+                                    vscode.workspace.openTextDocument( editor.fileName ).then( function( document )
+                                    {
+                                        vscode.window.showTextDocument( document, { preview: false } );
+                                    } );
+                                } );
+                            } );
+                        } );
+                    }
                 }
+            }
+
+            if( activePath === undefined )
+            {
+                activePath = vscode.window.activeTextEditor.document.uri.path;
             }
 
             var editor = vscode.window.activeTextEditor;
-
-            if( editor )
+            if( editor && editor.document && editor.document.uri.scheme === 'file' )
             {
-                if( editor.document.isDirty === false )
-                {
-                    var filepath = vscode.Uri.parse( editor.document.uri.path ).fsPath;
-                    var folder = path.dirname( filepath );
-                    var name = path.basename( filepath );
-
-                    try
-                    {
-                        var status = exec( 'git status -z ' + name, { cwd: folder } )
-
-                        if( status === undefined || ( status + "" ).trim() === "" )
-                        {
-                            vscode.commands.executeCommand( "workbench.action.closeActiveEditor" );
-                        }
-                    }
-                    catch( e )
-                    {
-                    }
-                    next( editor );
-                }
-                else
-                {
-                    next( editor );
-                }
+                openEditors.push( { fileName: editor.document.fileName, isDirty: editor.document.isDirty } );
             }
+
+            next( editor );
         } );
 
-        var aborter = setTimeout( abort, 3000 );
+        var activePath;
+
+        if( vscode.window.activeTextEditor )
+        {
+            activePath = vscode.window.activeTextEditor.document.uri.path;
+        }
+
+        var openEditors = [];
+
+        var aborter = setTimeout( abort, 1000 );
         vscode.commands.executeCommand( "workbench.action.nextEditor" );
     } );
 
