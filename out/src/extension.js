@@ -41,7 +41,7 @@ function activate( context )
                 {
                     debug( "can't do anything with this editor - trying next..." );
                     clearTimeout( aborter );
-                    aborter = setTimeout( abort, 1000 );
+                    aborter = setTimeout( abort, 5000 );
                     vscode.commands.executeCommand( "workbench.action.nextEditor" );
                 }
                 else
