@@ -9,6 +9,7 @@ var vscode = require( 'vscode' ),
 function activate( context )
 {
     var outputChannel;
+    var aborter;
 
     function debug( text )
     {
@@ -19,125 +20,136 @@ function activate( context )
 
         outputChannel.appendLine( new Date().toISOString() + ": " + text );
     }
-
-    var disposable = vscode.commands.registerCommand( 'extension.closeUnmodifiedEditors', function()
+    context.subscriptions.push( vscode.commands.registerCommand( 'closeUnmodified.resetOpenFileCache', function()
     {
-        function abort()
+        context.workspaceState.update( 'openEditors', [] ).then( dumpOpenEditors );
+    } ) );
+
+    context.subscriptions.push( vscode.commands.registerCommand( 'closeUnmodified.closeUnmodifiedEditors', function()
+    {
+        var openEditors = context.workspaceState.get( 'openEditors', [] );
+
+        debug( "Checking editors..." );
+
+        var editorsToKeep = openEditors.filter( function( filename )
         {
-            debug( "abort" );
-            if( openEditorsTracker )
+            debug( " Checking " + filename + "..." );
+            var keep = false;
             {
-                openEditorsTracker.dispose();
-            }
-        }
-
-        var openEditorsTracker = vscode.window.onDidChangeActiveTextEditor( function()
-        {
-            debug( "editor changed" );
-
-            function next( editor )
-            {
-                if( editor === undefined || editor.document.uri.path != activePath )
+                var folder = path.dirname( filename );
+                var name = path.basename( filename );
+                try
                 {
-                    debug( "can't do anything with this editor - trying next..." );
-                    clearTimeout( aborter );
-                    aborter = setTimeout( abort, 5000 );
-                    vscode.commands.executeCommand( "workbench.action.nextEditor" );
-                }
-                else
-                {
-                    debug( "resetting aborter" );
-                    clearTimeout( aborter );
-                    openEditorsTracker.dispose();
-
-                    debug( "openEditors:" + openEditors.length );
-                    if( openEditors.length > 0 )
+                    debug( "  Getting status..." );
+                    var status = exec( 'git status -z ' + name, { cwd: folder } )
+                    debug( "    status:" + status );
+                    if( status && ( status + "" ).trim() !== "" )
                     {
-                        debug( "Saving editors..." );
-                        vscode.workspace.saveAll( true ).then( function()
-                        {
-                            var keepEditors = openEditors.filter( function( editor )
-                            {
-                                debug( " Checking " + editor.fileName + "..." );
-                                var keep = editor.isDirty === true;
-
-                                if( keep === false )
-                                {
-                                    var folder = path.dirname( editor.fileName );
-                                    var name = path.basename( editor.fileName );
-                                    try
-                                    {
-                                        var status = exec( 'git status -z ' + name, { cwd: folder } )
-
-                                        if( status && ( status + "" ).trim() !== "" )
-                                        {
-                                            keep = true;
-                                        }
-                                    }
-                                    catch( e )
-                                    {
-                                    }
-                                }
-                                debug( "   Keep: " + ( keep ? "yes" : "no" ) );
-                                return keep;
-                            } );
-
-                            debug( "Closing Editors..." );
-
-                            vscode.commands.executeCommand( "workbench.action.closeAllEditors" ).then( function()
-                            {
-                                debug( " Reopening editors..." );
-                                keepEditors.map( function( editor )
-                                {
-                                    debug( "  Opening:" + editor.fileName );
-                                    vscode.workspace.openTextDocument( editor.fileName ).then( function( document )
-                                    {
-                                        vscode.window.showTextDocument( document, { preview: false } );
-                                    } );
-                                } );
-                            } );
-                        } );
+                        keep = true;
                     }
                 }
+                catch( e )
+                {
+                    debug( "   " + e );
+                }
             }
-
-            if( activePath === undefined )
-            {
-                debug( "setting current editor" );
-                activePath = vscode.window.activeTextEditor.document.uri.path;
-            }
-
-            var editor = vscode.window.activeTextEditor;
-            if( editor && editor.document && editor.document.uri.scheme === 'file' )
-            {
-                debug( "adding editor: " + editor.document.fileName );
-                openEditors.push( { fileName: editor.document.fileName, isDirty: editor.document.isDirty } );
-            } else
-            {
-                debug( "ignoring editor" );
-            }
-
-            debug( "next editor" );
-            next( editor );
+            debug( "   Keep: " + ( keep ? "yes" : "no" ) );
+            return keep;
         } );
 
-        var activePath;
+        debug( "Closing Editors..." );
 
-        if( vscode.window.activeTextEditor )
+        vscode.commands.executeCommand( "workbench.action.closeAllEditors" ).then( function()
         {
-            activePath = vscode.window.activeTextEditor.document.uri.path;
+            editorsToKeep.map( function( filename )
+            {
+                debug( " Opening:" + filename );
+                vscode.workspace.openTextDocument( filename ).then( function( document )
+                {
+                    vscode.window.showTextDocument( document, { preview: false } );
+                } );
+            } );
+        } );
+    } ) );
+
+    function dumpOpenEditors()
+    {
+        var openEditors = context.workspaceState.get( 'openEditors', [] );
+        debug( "Open editors:\n " + JSON.stringify( openEditors, null, 2 ) );
+    }
+
+    function getDocumentFilename( document )
+    {
+        if( document && document.uri )
+        {
+            if( document.uri.scheme === 'file' )
+            {
+                return document.fileName;
+            }
         }
 
-        var openEditors = [];
+        return undefined;
+    }
 
-        debug( "Starting..." );
-        var aborter = setTimeout( abort, 1000 );
-        vscode.commands.executeCommand( "workbench.action.nextEditor" );
-    } );
+    context.subscriptions.push( vscode.workspace.onDidOpenTextDocument( function( document )
+    {
+        debug( "onDidOpenTextDocument: " + JSON.stringify( document.uri ) );
+
+        var openEditors = context.workspaceState.get( 'openEditors', [] );
+
+        var filename = getDocumentFilename( document );
+
+        if( filename )
+        {
+            if( openEditors.indexOf( filename ) === -1 )
+            {
+                openEditors.push( filename );
+            }
+
+            context.workspaceState.update( 'openEditors', openEditors ).then( dumpOpenEditors );
+        }
+    } ) );
+
+    context.subscriptions.push( vscode.workspace.onDidCloseTextDocument( function( document )
+    {
+        debug( "onDidCloseTextDocument: " + JSON.stringify( document.uri ) );
+
+        var openEditors = context.workspaceState.get( 'openEditors', [] );
+
+        var filename = getDocumentFilename( document );
+
+        if( filename )
+        {
+            var openEditors = openEditors.filter( function( openEditor )
+            {
+                return openEditor !== filename;
+            } );
+
+            context.workspaceState.update( 'openEditors', openEditors ).then( dumpOpenEditors );
+        }
+    } ) );
+
+    context.subscriptions.push( vscode.window.onDidChangeVisibleTextEditors( function( visibleEditors )
+    {
+        var openEditors = context.workspaceState.get( 'openEditors', [] );
+
+        visibleEditors.map( function( editor )
+        {
+            var filename = getDocumentFilename( editor.document );
+
+            if( filename )
+            {
+                if( openEditors.indexOf( filename ) === -1 )
+                {
+                    openEditors.push( filename );
+                }
+            }
+        } );
+
+        context.workspaceState.update( 'openEditors', openEditors ).then( dumpOpenEditors );
+    } ) );
 
     debug( "Ready" );
-
-    context.subscriptions.push( disposable );
 }
 exports.activate = activate;
 

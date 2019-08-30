@@ -1,49 +1,59 @@
 {
-  "name": "closeunmodified",
-  "displayName": "Close Unmodified",
-  "icon": "icon.png",
-  "description": "Close files which aren't modified in git",
-  "version": "0.0.7",
-  "publisher": "Gruntfuggly",
-  "repository": "https://github.com/Gruntfuggly/closeunmodified",
-  "engines": {
-    "vscode": "^1.5.0"
-  },
-  "categories": [
-    "Other"
-  ],
-  "activationEvents": [
-    "*"
-  ],
-  "main": "./out/src/extension",
-  "contributes": {
-    "commands": [
-      {
-        "command": "extension.closeUnmodifiedEditors",
-        "title": "Close unmodified editors"
-      }
+    "name": "closeunmodified",
+    "displayName": "Close Unmodified",
+    "icon": "icon.png",
+    "description": "Close files which aren't modified in git",
+    "version": "0.0.7",
+    "publisher": "Gruntfuggly",
+    "repository": "https://github.com/Gruntfuggly/closeunmodified",
+    "engines": {
+        "vscode": "^1.5.0"
+    },
+    "categories": [
+        "Other"
     ],
-    "menus": {
-      "explorer/context": [
-        {
-          "command": "extension.closeUnmodifiedEditors",
-          "group": "close"
+    "activationEvents": [
+        "*"
+    ],
+    "main": "./out/src/extension",
+    "contributes": {
+        "commands": [
+            {
+                "command": "closeUnmodified.closeUnmodifiedEditors",
+                "title": "Close unmodified editors",
+                "group": "Close unmodified"
+            },
+            {
+                "command": "closeUnmodified.resetOpenFileCache",
+                "title": "Reset Open File Cache",
+                "group": "Close unmodified"
+            }
+        ],
+        "menus": {
+            "explorer/context": [
+                {
+                    "command": "closeUnmodified.closeUnmodifiedEditors",
+                    "group": "close"
+                }
+            ]
         }
-      ]
+    },
+    "scripts": {
+        "postinstall": "node ./node_modules/vscode/bin/install",
+        "test": "node ./node_modules/vscode/bin/test"
+    },
+    "devDependencies": {
+        "typescript": "^2.0.3",
+        "vscode": "^1.0.0",
+        "mocha": "^2.3.3",
+        "eslint": "^3.6.0",
+        "@types/node": "^6.0.40",
+        "@types/mocha": "^2.2.32"
+    },
+    "dependencies": {},
+    "__metadata": {
+        "id": "9fcf1173-e822-46f4-88f1-baa36bbc69e7",
+        "publisherDisplayName": "Gruntfuggly",
+        "publisherId": "d4906d2e-f2ee-492d-9c7c-02b6160599ec"
     }
-  },
-  "scripts": {
-    "postinstall": "node ./node_modules/vscode/bin/install",
-    "test": "node ./node_modules/vscode/bin/test"
-  },
-  "devDependencies": {
-    "typescript": "^2.0.3",
-    "vscode": "^1.0.0",
-    "mocha": "^2.3.3",
-    "eslint": "^3.6.0",
-    "@types/node": "^6.0.40",
-    "@types/mocha": "^2.2.32"
-  },
-  "dependencies": {
-  }
 }
